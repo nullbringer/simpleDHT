@@ -2,7 +2,12 @@ package edu.buffalo.cse.cse486586.simpledht;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Formatter;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.BlockingQueue;
 
 import android.content.ContentProvider;
 import android.content.ContentValues;
@@ -15,17 +20,25 @@ import android.util.Log;
 
 public class SimpleDhtProvider extends ContentProvider {
 
-    private static final String KEY_FIELD = "key";
-    private static final String VALUE_FIELD = "value";
-    private static final String PREFERENCE_FILE = "groupMsg2PreferenceFile";
+
 
     @Override
     public int delete(Uri uri, String selection, String[] selectionArgs) {
 
-        SharedPreferences sharedPref = getContext().getSharedPreferences(PREFERENCE_FILE, Context.MODE_PRIVATE);
+        SharedPreferences sharedPref = getContext().getSharedPreferences(Constants.PREFERENCE_FILE, Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPref.edit();
 
-        editor.remove(selection);
+        if(selection.equals(Constants.GLOBAL_INDICATOR)){
+
+            //TODO: delete DHT data
+
+        } else if(selection.equals(Constants.LOCAL_INDICATOR)){
+            editor.clear();
+
+        } else{
+            editor.remove(selection);
+        }
+
         editor.commit();
 
         Log.v("removed", selection);
@@ -42,10 +55,10 @@ public class SimpleDhtProvider extends ContentProvider {
     @Override
     public Uri insert(Uri uri, ContentValues values) {
 
-        SharedPreferences sharedPref = getContext().getSharedPreferences(PREFERENCE_FILE, Context.MODE_PRIVATE);
+        SharedPreferences sharedPref = getContext().getSharedPreferences(Constants.PREFERENCE_FILE, Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPref.edit();
 
-        editor.putString(values.getAsString(KEY_FIELD), values.getAsString(VALUE_FIELD));
+        editor.putString(values.getAsString(Constants.KEY_FIELD), values.getAsString(Constants.VALUE_FIELD));
         editor.commit();
 
         Log.v("insert", values.toString());
@@ -64,23 +77,42 @@ public class SimpleDhtProvider extends ContentProvider {
 
         Log.v("query", selection);
 
-        SharedPreferences sharedPref = getContext().getSharedPreferences(PREFERENCE_FILE, Context.MODE_PRIVATE);
+        SharedPreferences sharedPref = getContext().getSharedPreferences(Constants.PREFERENCE_FILE, Context.MODE_PRIVATE);
 
-        String value = sharedPref.getString(selection, null);
+        HashMap<String,String> hm = new HashMap<String,String>();
+
+        if(selection.equals(Constants.GLOBAL_INDICATOR)){
+
+            //TODO: get DHT data
+
+        } else if(selection.equals(Constants.LOCAL_INDICATOR)){
+
+            Map<String,?> keys = sharedPref.getAll();
+
+            for(Map.Entry<String,?> entry : keys.entrySet()){
+
+                hm.put(entry.getKey(),entry.getValue().toString());
+
+                //Log.d("map values",entry.getKey() + ": " + entry.getValue().toString());
+            }
+
+        } else {
+
+            hm.put(selection, sharedPref.getString(selection, null));
 
 
-
+        }
 
         MatrixCursor cursor = new MatrixCursor(
-                new String[] {KEY_FIELD, VALUE_FIELD}
+                new String[] {Constants.KEY_FIELD, Constants.VALUE_FIELD}
         );
 
-        cursor.newRow()
-                .add(KEY_FIELD, selection)
-                .add(VALUE_FIELD, value);
+        for (Map.Entry<String, String> entry : hm.entrySet()) {
 
-
-
+            cursor.newRow()
+                    .add(Constants.KEY_FIELD, entry.getKey())
+                    .add(Constants.VALUE_FIELD, entry.getValue());
+        }
 
         return cursor;
     }

@@ -14,8 +14,6 @@ public class OnTestClickListener implements OnClickListener {
 
 	private static final String TAG = OnTestClickListener.class.getName();
 	private static final int TEST_CNT = 50;
-	private static final String KEY_FIELD = "key";
-	private static final String VALUE_FIELD = "value";
 
 	private final TextView mTextView;
 	private final ContentResolver mContentResolver;
@@ -40,8 +38,8 @@ public class OnTestClickListener implements OnClickListener {
 		ContentValues[] cv = new ContentValues[TEST_CNT];
 		for (int i = 0; i < TEST_CNT; i++) {
 			cv[i] = new ContentValues();
-			cv[i].put(KEY_FIELD, "key" + Integer.toString(i));
-			cv[i].put(VALUE_FIELD, "val" + Integer.toString(i));
+			cv[i].put(Constants.KEY_FIELD, "key" + Integer.toString(i));
+			cv[i].put(Constants.VALUE_FIELD, "val" + Integer.toString(i));
 		}
 
 		return cv;
@@ -94,8 +92,8 @@ public class OnTestClickListener implements OnClickListener {
 		private boolean testQuery() {
 			try {
 				for (int i = 0; i < TEST_CNT; i++) {
-					String key = (String) mContentValues[i].get(KEY_FIELD);
-					String val = (String) mContentValues[i].get(VALUE_FIELD);
+					String key = (String) mContentValues[i].get(Constants.KEY_FIELD);
+					String val = (String) mContentValues[i].get(Constants.VALUE_FIELD);
 
 					Cursor resultCursor = mContentResolver.query(mUri, null,
 							key, null, null);
@@ -104,8 +102,8 @@ public class OnTestClickListener implements OnClickListener {
 						throw new Exception();
 					}
 
-					int keyIndex = resultCursor.getColumnIndex(KEY_FIELD);
-					int valueIndex = resultCursor.getColumnIndex(VALUE_FIELD);
+					int keyIndex = resultCursor.getColumnIndex(Constants.KEY_FIELD);
+					int valueIndex = resultCursor.getColumnIndex(Constants.VALUE_FIELD);
 					if (keyIndex == -1 || valueIndex == -1) {
 						Log.e(TAG, "Wrong columns");
 						resultCursor.close();
