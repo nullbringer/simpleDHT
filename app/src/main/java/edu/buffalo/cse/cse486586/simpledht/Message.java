@@ -1,11 +1,17 @@
 package edu.buffalo.cse.cse486586.simpledht;
 
+
+
 public class Message {
 
     private String key;
     private String value;
     private String hashKey;
     private String origin;
+    private MessageType messageType;
+    private String prevNode;
+    private String nextNode;
+
 
     public String getKey() {
         return key;
@@ -39,27 +45,53 @@ public class Message {
         this.origin = origin;
     }
 
-    public Message(String key, String value, String hashKey, String origin) {
-        this.key = key;
-        this.value = value;
-        this.hashKey = hashKey;
-        this.origin = origin;
+    public MessageType getMessageType() {
+        return messageType;
+    }
+
+    public String getPrevNode() {
+        return prevNode;
+    }
+
+    public void setPrevNode(String prevNode) {
+        this.prevNode = prevNode;
+    }
+
+    public String getNextNode() {
+        return nextNode;
+    }
+
+    public void setNextNode(String nextNode) {
+        this.nextNode = nextNode;
+    }
+
+    public void setMessageType(MessageType messageType) {
+        this.messageType = messageType;
+    }
+
+    public Message() {
     }
 
     public Message(String packet){
 
-        String strReceived [] = packet.trim().split(Constants.SEPERATOR);
+        String strReceived [] = packet.trim().split(Constants.SEPARATOR);
 
         key = strReceived[0];
         value = strReceived[1];
         hashKey = strReceived[2];
         origin = strReceived[3];
+        messageType = MessageType.valueOf(strReceived[4]);
+        prevNode = strReceived[5];
+        nextNode = strReceived[6];
 
     }
 
     public String createPacket(){
 
-        return key + Constants.SEPERATOR + value + Constants.SEPERATOR + hashKey + Constants.SEPERATOR + origin;
+        return key + Constants.SEPARATOR + value + Constants.SEPARATOR + hashKey + Constants.SEPARATOR + origin +
+                Constants.SEPARATOR + messageType.name() + Constants.SEPARATOR + prevNode + Constants.SEPARATOR +
+                nextNode;
 
     }
+
 }
