@@ -48,10 +48,11 @@ public class OnLDumpClickListener implements OnClickListener {
 			Cursor resultCursor = mContentResolver.query(mUri, null,
 					Constants.LOCAL_INDICATOR, null, null);
 
+			int count = 0;
 
 			if (resultCursor.moveToFirst()) {
 				while (!resultCursor.isAfterLast()) {
-					String data = "<"+ resultCursor.getString(resultCursor.getColumnIndex(Constants.KEY_FIELD)) +
+					String data = count++ + ". <"+ resultCursor.getString(resultCursor.getColumnIndex(Constants.KEY_FIELD)) +
 							"," + resultCursor.getString(resultCursor.getColumnIndex(Constants.VALUE_FIELD)) +
 							">\n";
 

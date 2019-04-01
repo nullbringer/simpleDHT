@@ -16,7 +16,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 
 import android.content.ContentProvider;
 import android.content.ContentValues;
@@ -125,15 +124,15 @@ public class SimpleDhtProvider extends ContentProvider {
 
                             updateAdjacentNodes(msg);
 
+                        } else if(msg.getMessageType() == MessageType.STOR){
+
+                            saveInRing(msg.getKey(),msg.getValue());
+
                         } else {
 
                             publishProgress(msg);
 
                         }
-
-
-
-
 
                     }
 
@@ -311,6 +310,47 @@ public class SimpleDhtProvider extends ContentProvider {
 
     }
 
+    private void saveInRing(String thisKey, String thisValue){
+
+
+        try {
+
+            String hashedKey = genHash(thisKey);
+            String myNodeHash = genHash(MY_PORT);
+            String prevNodeHash = genHash(PREV_NODE);
+
+
+            if(hashedKey.compareTo(myNodeHash)<0 && hashedKey.compareTo(prevNodeHash)>=0){
+
+                SharedPreferences sharedPref = getContext().getSharedPreferences(Constants.PREFERENCE_FILE, Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = sharedPref.edit();
+
+                editor.putString(thisKey, thisValue);
+                editor.commit();
+
+
+            } else{
+
+                /* forward the request to successor node */
+
+                Message message = new Message();
+                message.setMessageType(MessageType.STOR);
+                message.setKey(thisKey);
+                message.setValue(thisValue);
+
+                new ClientTask().executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, message.createPacket(), NEXT_NODE);
+
+            }
+
+        } catch (NoSuchAlgorithmException e) {
+
+            Log.e(TAG, "Could not hash!!");
+
+        }
+
+
+    }
+
     @Override
     public int delete(Uri uri, String selection, String[] selectionArgs) {
 
@@ -344,13 +384,12 @@ public class SimpleDhtProvider extends ContentProvider {
     @Override
     public Uri insert(Uri uri, ContentValues values) {
 
-        SharedPreferences sharedPref = getContext().getSharedPreferences(Constants.PREFERENCE_FILE, Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPref.edit();
+        String thisKey = values.getAsString(Constants.KEY_FIELD);
+        String thisValue = values.getAsString(Constants.VALUE_FIELD);
 
-        editor.putString(values.getAsString(Constants.KEY_FIELD), values.getAsString(Constants.VALUE_FIELD));
-        editor.commit();
 
-        Log.v("insert", values.toString());
+        saveInRing(thisKey, thisValue);
+
         return uri;
     }
 

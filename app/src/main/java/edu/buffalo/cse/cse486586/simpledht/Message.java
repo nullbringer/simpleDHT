@@ -6,7 +6,6 @@ public class Message {
 
     private String key;
     private String value;
-    private String hashKey;
     private String origin;
     private MessageType messageType;
     private String prevNode;
@@ -27,14 +26,6 @@ public class Message {
 
     public void setValue(String value) {
         this.value = value;
-    }
-
-    public String getHashKey() {
-        return hashKey;
-    }
-
-    public void setHashKey(String hashKey) {
-        this.hashKey = hashKey;
     }
 
     public String getOrigin() {
@@ -78,17 +69,16 @@ public class Message {
 
         key = strReceived[0];
         value = strReceived[1];
-        hashKey = strReceived[2];
-        origin = strReceived[3];
-        messageType = MessageType.valueOf(strReceived[4]);
-        prevNode = strReceived[5];
-        nextNode = strReceived[6];
+        origin = strReceived[2];
+        messageType = MessageType.valueOf(strReceived[3]);
+        prevNode = strReceived[4];
+        nextNode = strReceived[5];
 
     }
 
     public String createPacket(){
 
-        return key + Constants.SEPARATOR + value + Constants.SEPARATOR + hashKey + Constants.SEPARATOR + origin +
+        return key + Constants.SEPARATOR + value + Constants.SEPARATOR + origin +
                 Constants.SEPARATOR + messageType.name() + Constants.SEPARATOR + prevNode + Constants.SEPARATOR +
                 nextNode;
 
