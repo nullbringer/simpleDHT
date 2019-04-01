@@ -53,7 +53,8 @@ public class SimpleDhtProvider extends ContentProvider {
 
             if(MY_PORT.equals(Constants.LEADER_PORT)){
                 isLeader = true;
-                ringStructure.put(genHash(MY_PORT),MY_PORT);
+                String emulatorId = String.valueOf(Integer.parseInt(MY_PORT)/2);
+                ringStructure.put(genHash(emulatorId),MY_PORT);
             }
 
             Log.e(TAG,"my Port:::" + MY_PORT);
@@ -112,6 +113,7 @@ public class SimpleDhtProvider extends ContentProvider {
                         Message msg = new Message(incomingMessege);
 
 
+                        Log.d(TAG, msg.toString());
 
                         switch (msg.getMessageType()){
 
@@ -228,7 +230,8 @@ public class SimpleDhtProvider extends ContentProvider {
 
     private void addNodeToNetwork(Message msg) throws NoSuchAlgorithmException{
 
-        ringStructure.put(genHash(msg.getOrigin()),msg.getOrigin());
+
+        ringStructure.put(genHash(String.valueOf(Integer.parseInt(msg.getOrigin())/2)),msg.getOrigin());
 
         /* update New Node */
         Message returnMsg = new Message();
@@ -317,17 +320,32 @@ public class SimpleDhtProvider extends ContentProvider {
             boolean shouldSaveLocal = false;
 
             String hashedKey = genHash(message.getKey());
-            String myNodeHash = genHash(MY_PORT);
-            String prevNodeHash = genHash(PREV_NODE);
+            String myNodeHash = genHash(String.valueOf(Integer.parseInt(MY_PORT)/2));
+            String prevNodeHash = genHash(String.valueOf(Integer.parseInt(PREV_NODE)/2));
             if(myNodeHash.compareTo(prevNodeHash)==0){
+
+                /* if the network has only one node*/
+
                 shouldSaveLocal = true;
             }
             else{
 
                 if(myNodeHash.compareTo(prevNodeHash)<0){
-                    myNodeHash = Constants.HIGHEST_HASHED_KEY;
+
+                    if(hashedKey.compareTo(myNodeHash)<0 && hashedKey.compareTo(Constants.HASHED_VALUE_MIN)>0){
+
+                        prevNodeHash = Constants.HASHED_VALUE_MIN;
+
+                    } else if(hashedKey.compareTo(prevNodeHash)>0 && hashedKey.compareTo(Constants.HASHED_VALUE_MAX)<0){
+
+                        myNodeHash = Constants.HASHED_VALUE_MAX;
+
+                    }
+
 
                 }
+
+                /* the the target belongs between two successive nodes */
 
                 if(hashedKey.compareTo(myNodeHash)<0 && hashedKey.compareTo(prevNodeHash)>=0){
 

@@ -84,4 +84,15 @@ public class Message {
 
     }
 
+    @Override
+    public String toString() {
+        return "Message{" +
+                "key='" + key + '\'' +
+                ", value='" + value + '\'' +
+                ", origin='" + origin + '\'' +
+                ", messageType=" + messageType +
+                ", prevNode='" + prevNode + '\'' +
+                ", nextNode='" + nextNode + '\'' +
+                '}';
+    }
 }

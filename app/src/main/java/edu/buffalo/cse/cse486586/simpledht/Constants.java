@@ -15,7 +15,9 @@ public class Constants {
 
     public static final String LEADER_PORT = "11108";
 
-    public static final String HIGHEST_HASHED_KEY = "ffffffffffffffffffffffffffffffffffffffff";
+    public static final String HASHED_VALUE_MAX = "ffffffffffffffffffffffffffffffffffffffff";
+
+    public static final String HASHED_VALUE_MIN = "0000000000000000000000000000000000000000";
 
 
 
