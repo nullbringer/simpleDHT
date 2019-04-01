@@ -48,7 +48,7 @@ public class OnLDumpClickListener implements OnClickListener {
 			Cursor resultCursor = mContentResolver.query(mUri, null,
 					Constants.LOCAL_INDICATOR, null, null);
 
-			int count = 0;
+			int count = 1;
 
 			if (resultCursor.moveToFirst()) {
 				while (!resultCursor.isAfterLast()) {

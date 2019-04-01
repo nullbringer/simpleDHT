@@ -116,21 +116,25 @@ public class SimpleDhtProvider extends ContentProvider {
 
                         Message msg = new Message(incomingMessege);
 
-                        if(msg.getMessageType() == MessageType.JOIN){
 
-                            addNodeToNetwork(msg);
 
-                        } else if(msg.getMessageType() == MessageType.JOIN_ACK){
+                        switch (msg.getMessageType()){
 
-                            updateAdjacentNodes(msg);
+                            case JOIN:
+                                addNodeToNetwork(msg);
+                                break;
 
-                        } else if(msg.getMessageType() == MessageType.STOR){
+                            case JOIN_ACK:
+                                updateAdjacentNodes(msg);
+                                break;
 
-                            saveInRing(msg.getKey(),msg.getValue());
+                            case STOR:
+                                saveInRing(msg);
+                                break;
 
-                        } else {
+                            default:
 
-                            publishProgress(msg);
+                                publishProgress(msg);
 
                         }
 
@@ -310,33 +314,32 @@ public class SimpleDhtProvider extends ContentProvider {
 
     }
 
-    private void saveInRing(String thisKey, String thisValue){
+    private void saveInRing(Message message){
 
 
         try {
 
-            String hashedKey = genHash(thisKey);
+            String hashedKey = genHash(message.getKey());
             String myNodeHash = genHash(MY_PORT);
             String prevNodeHash = genHash(PREV_NODE);
 
+            if(myNodeHash.compareTo(prevNodeHash)<0){
+                myNodeHash = Constants.HIGHEST_HASHED_KEY;
+
+            }
 
             if(hashedKey.compareTo(myNodeHash)<0 && hashedKey.compareTo(prevNodeHash)>=0){
 
                 SharedPreferences sharedPref = getContext().getSharedPreferences(Constants.PREFERENCE_FILE, Context.MODE_PRIVATE);
                 SharedPreferences.Editor editor = sharedPref.edit();
 
-                editor.putString(thisKey, thisValue);
+                editor.putString(message.getKey(), message.getValue());
                 editor.commit();
 
 
             } else{
 
                 /* forward the request to successor node */
-
-                Message message = new Message();
-                message.setMessageType(MessageType.STOR);
-                message.setKey(thisKey);
-                message.setValue(thisValue);
 
                 new ClientTask().executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, message.createPacket(), NEXT_NODE);
 
@@ -388,7 +391,14 @@ public class SimpleDhtProvider extends ContentProvider {
         String thisValue = values.getAsString(Constants.VALUE_FIELD);
 
 
-        saveInRing(thisKey, thisValue);
+        Message message = new Message();
+        message.setMessageType(MessageType.STOR);
+        message.setOrigin(MY_PORT);
+        message.setKey(thisKey);
+        message.setValue(thisValue);
+
+
+        saveInRing(message);
 
         return uri;
     }
