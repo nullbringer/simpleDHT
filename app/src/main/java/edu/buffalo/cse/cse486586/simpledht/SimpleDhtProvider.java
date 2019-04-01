@@ -47,21 +47,19 @@ public class SimpleDhtProvider extends ContentProvider {
         TelephonyManager tel = (TelephonyManager) getContext().getSystemService(Context.TELEPHONY_SERVICE);
         String portStr = tel.getLine1Number().substring(tel.getLine1Number().length() - 4);
         MY_PORT = String.valueOf(Integer.parseInt(portStr) * 2);
+        PREV_NODE = NEXT_NODE = MY_PORT;
 
         try {
 
             if(MY_PORT.equals(Constants.LEADER_PORT)){
                 isLeader = true;
                 ringStructure.put(genHash(MY_PORT),MY_PORT);
-                PREV_NODE = NEXT_NODE = MY_PORT;
             }
 
             Log.e(TAG,"my Port:::" + MY_PORT);
 
 
             /* Create server */
-
-
 
             ServerSocket serverSocket = new ServerSocket(Constants.SERVER_PORT);
             new ServerTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, serverSocket);
@@ -85,9 +83,6 @@ public class SimpleDhtProvider extends ContentProvider {
 
             new ClientTask().executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, message.createPacket(), Constants.LEADER_PORT);
         }
-
-
-
 
         return true;
     }
@@ -319,16 +314,30 @@ public class SimpleDhtProvider extends ContentProvider {
 
         try {
 
+            boolean shouldSaveLocal = false;
+
             String hashedKey = genHash(message.getKey());
             String myNodeHash = genHash(MY_PORT);
             String prevNodeHash = genHash(PREV_NODE);
+            if(myNodeHash.compareTo(prevNodeHash)==0){
+                shouldSaveLocal = true;
+            }
+            else{
 
-            if(myNodeHash.compareTo(prevNodeHash)<0){
-                myNodeHash = Constants.HIGHEST_HASHED_KEY;
+                if(myNodeHash.compareTo(prevNodeHash)<0){
+                    myNodeHash = Constants.HIGHEST_HASHED_KEY;
+
+                }
+
+                if(hashedKey.compareTo(myNodeHash)<0 && hashedKey.compareTo(prevNodeHash)>=0){
+
+                    shouldSaveLocal = true;
+
+                }
 
             }
 
-            if(hashedKey.compareTo(myNodeHash)<0 && hashedKey.compareTo(prevNodeHash)>=0){
+            if(shouldSaveLocal){
 
                 SharedPreferences sharedPref = getContext().getSharedPreferences(Constants.PREFERENCE_FILE, Context.MODE_PRIVATE);
                 SharedPreferences.Editor editor = sharedPref.edit();
@@ -337,7 +346,7 @@ public class SimpleDhtProvider extends ContentProvider {
                 editor.commit();
 
 
-            } else{
+            }else{
 
                 /* forward the request to successor node */
 
@@ -409,26 +418,20 @@ public class SimpleDhtProvider extends ContentProvider {
 
         Log.v("query", selection);
 
-        SharedPreferences sharedPref = getContext().getSharedPreferences(Constants.PREFERENCE_FILE, Context.MODE_PRIVATE);
-
         HashMap<String,String> hm = new HashMap<String,String>();
 
         if(selection.equals(Constants.GLOBAL_INDICATOR)){
 
             //TODO: get DHT data
+            hm = getAllLocalData();
 
         } else if(selection.equals(Constants.LOCAL_INDICATOR)){
 
-            Map<String,?> keys = sharedPref.getAll();
-
-            for(Map.Entry<String,?> entry : keys.entrySet()){
-
-                hm.put(entry.getKey(),entry.getValue().toString());
-
-                //Log.d("map values",entry.getKey() + ": " + entry.getValue().toString());
-            }
+            hm = getAllLocalData();
 
         } else {
+
+            SharedPreferences sharedPref = getContext().getSharedPreferences(Constants.PREFERENCE_FILE, Context.MODE_PRIVATE);
 
             hm.put(selection, sharedPref.getString(selection, null));
 
@@ -447,6 +450,25 @@ public class SimpleDhtProvider extends ContentProvider {
         }
 
         return cursor;
+    }
+
+    private HashMap<String, String> getAllLocalData(){
+
+        HashMap<String,String> hm = new HashMap<String,String>();
+
+        SharedPreferences sharedPref = getContext().getSharedPreferences(Constants.PREFERENCE_FILE, Context.MODE_PRIVATE);
+
+        Map<String,?> keys = sharedPref.getAll();
+
+        for(Map.Entry<String,?> entry : keys.entrySet()){
+
+            hm.put(entry.getKey(),entry.getValue().toString());
+
+            //Log.d("map values",entry.getKey() + ": " + entry.getValue().toString());
+        }
+
+        return hm;
+
     }
 
     @Override
