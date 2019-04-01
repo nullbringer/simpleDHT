@@ -14,6 +14,8 @@ import java.util.Formatter;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 import android.content.ContentProvider;
@@ -37,7 +39,7 @@ public class SimpleDhtProvider extends ContentProvider {
     private static String PREV_NODE;
     private static String NEXT_NODE;
 
-    private static TreeSet<String> ringStructure = new TreeSet<String>();
+    private static TreeMap<String, String> ringStructure = new TreeMap<String,String>();
 
     @Override
     public boolean onCreate() {
@@ -47,18 +49,20 @@ public class SimpleDhtProvider extends ContentProvider {
         String portStr = tel.getLine1Number().substring(tel.getLine1Number().length() - 4);
         MY_PORT = String.valueOf(Integer.parseInt(portStr) * 2);
 
-        if(MY_PORT.equals(Constants.LEADER_PORT)){
-            isLeader = true;
-            ringStructure.add(MY_PORT);
-            PREV_NODE = NEXT_NODE = MY_PORT;
-        }
-
-        Log.e(TAG,"my Port:::" + MY_PORT);
-
-
-        /* Create server */
-
         try {
+
+            if(MY_PORT.equals(Constants.LEADER_PORT)){
+                isLeader = true;
+                ringStructure.put(genHash(MY_PORT),MY_PORT);
+                PREV_NODE = NEXT_NODE = MY_PORT;
+            }
+
+            Log.e(TAG,"my Port:::" + MY_PORT);
+
+
+            /* Create server */
+
+
 
             ServerSocket serverSocket = new ServerSocket(Constants.SERVER_PORT);
             new ServerTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, serverSocket);
@@ -66,6 +70,9 @@ public class SimpleDhtProvider extends ContentProvider {
         } catch (IOException e) {
 
             Log.e(TAG, "Can't create a ServerSocket");
+            return false;
+        } catch (NoSuchAlgorithmException e){
+            Log.e(TAG, "Could not hash!");
             return false;
         }
 
@@ -84,111 +91,6 @@ public class SimpleDhtProvider extends ContentProvider {
 
 
         return true;
-    }
-
-    @Override
-    public int delete(Uri uri, String selection, String[] selectionArgs) {
-
-        SharedPreferences sharedPref = getContext().getSharedPreferences(Constants.PREFERENCE_FILE, Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPref.edit();
-
-        if(selection.equals(Constants.GLOBAL_INDICATOR)){
-
-            //TODO: delete DHT data
-
-        } else if(selection.equals(Constants.LOCAL_INDICATOR)){
-            editor.clear();
-
-        } else{
-            editor.remove(selection);
-        }
-
-        editor.commit();
-
-        Log.v("removed", selection);
-
-        return 0;
-    }
-
-    @Override
-    public String getType(Uri uri) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public Uri insert(Uri uri, ContentValues values) {
-
-        SharedPreferences sharedPref = getContext().getSharedPreferences(Constants.PREFERENCE_FILE, Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPref.edit();
-
-        editor.putString(values.getAsString(Constants.KEY_FIELD), values.getAsString(Constants.VALUE_FIELD));
-        editor.commit();
-
-        Log.v("insert", values.toString());
-        return uri;
-    }
-
-    @Override
-    public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs,
-            String sortOrder) {
-
-        Log.v("query", selection);
-
-        SharedPreferences sharedPref = getContext().getSharedPreferences(Constants.PREFERENCE_FILE, Context.MODE_PRIVATE);
-
-        HashMap<String,String> hm = new HashMap<String,String>();
-
-        if(selection.equals(Constants.GLOBAL_INDICATOR)){
-
-            //TODO: get DHT data
-
-        } else if(selection.equals(Constants.LOCAL_INDICATOR)){
-
-            Map<String,?> keys = sharedPref.getAll();
-
-            for(Map.Entry<String,?> entry : keys.entrySet()){
-
-                hm.put(entry.getKey(),entry.getValue().toString());
-
-                //Log.d("map values",entry.getKey() + ": " + entry.getValue().toString());
-            }
-
-        } else {
-
-            hm.put(selection, sharedPref.getString(selection, null));
-
-
-        }
-
-        MatrixCursor cursor = new MatrixCursor(
-                new String[] {Constants.KEY_FIELD, Constants.VALUE_FIELD}
-        );
-
-        for (Map.Entry<String, String> entry : hm.entrySet()) {
-
-            cursor.newRow()
-                    .add(Constants.KEY_FIELD, entry.getKey())
-                    .add(Constants.VALUE_FIELD, entry.getValue());
-        }
-
-        return cursor;
-    }
-
-    @Override
-    public int update(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
-        // TODO Auto-generated method stub
-        return 0;
-    }
-
-    private String genHash(String input) throws NoSuchAlgorithmException {
-        MessageDigest sha1 = MessageDigest.getInstance("SHA-1");
-        byte[] sha1Hash = sha1.digest(input.getBytes());
-        Formatter formatter = new Formatter();
-        for (byte b : sha1Hash) {
-            formatter.format("%02x", b);
-        }
-        return formatter.toString();
     }
 
 
@@ -240,7 +142,9 @@ public class SimpleDhtProvider extends ContentProvider {
 
 
                 } catch (IOException e) {
-                    Log.e("ERROR", "Client Connection failed");
+                    Log.e(TAG, "Client Connection failed");
+                } catch (NoSuchAlgorithmException e){
+                    Log.e(TAG, "Could not hash!!");
                 }
             }
 
@@ -324,9 +228,9 @@ public class SimpleDhtProvider extends ContentProvider {
 
     }
 
-    private void addNodeToNetwork(Message msg){
+    private void addNodeToNetwork(Message msg) throws NoSuchAlgorithmException{
 
-        ringStructure.add(msg.getOrigin());
+        ringStructure.put(genHash(msg.getOrigin()),msg.getOrigin());
 
         /* update New Node */
         Message returnMsg = new Message();
@@ -353,7 +257,7 @@ public class SimpleDhtProvider extends ContentProvider {
         if (returnMsg.getPrevNode()!= returnMsg.getNextNode()) {
 
             newMsg = findAdjacentNode(newMsg, returnMsg.getNextNode());
-            new ClientTask().executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, newMsg.createPacket(), returnMsg.getPrevNode());
+            new ClientTask().executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, newMsg.createPacket(), returnMsg.getNextNode());
         }
 
 
@@ -362,28 +266,36 @@ public class SimpleDhtProvider extends ContentProvider {
     private Message findAdjacentNode(Message msg, String targetPort){
 
 
-        msg.setPrevNode(ringStructure.last());
 
-        Iterator<String> value = ringStructure.iterator();
 
-        while (value.hasNext()) {
+        msg.setPrevNode(ringStructure.lastEntry().getValue());
 
-            String thisPort = value.next();
+
+
+
+        Set<String> keys = ringStructure.keySet();
+        Iterator<String> keyIterator = keys.iterator();
+
+        while(keyIterator.hasNext()){
+
+            String key = keyIterator.next();
+            String thisPort = ringStructure.get(key);
 
             if(thisPort.equals(targetPort)){
 
-                if(value.hasNext())
-                    msg.setNextNode(value.next());
+                if(keyIterator.hasNext())
+                    msg.setNextNode(ringStructure.get(keyIterator.next()));
                 else
-                    msg.setNextNode(ringStructure.first());
+                    msg.setNextNode(ringStructure.firstEntry().getValue());
 
 
                 break;
 
 
             } else {
-                msg.setPrevNode(ringStructure.first());
+                msg.setPrevNode(thisPort);
             }
+
 
 
         }
@@ -397,6 +309,111 @@ public class SimpleDhtProvider extends ContentProvider {
         PREV_NODE = msg.getPrevNode();
         NEXT_NODE = msg.getNextNode();
 
+    }
+
+    @Override
+    public int delete(Uri uri, String selection, String[] selectionArgs) {
+
+        SharedPreferences sharedPref = getContext().getSharedPreferences(Constants.PREFERENCE_FILE, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPref.edit();
+
+        if(selection.equals(Constants.GLOBAL_INDICATOR)){
+
+            //TODO: delete DHT data
+
+        } else if(selection.equals(Constants.LOCAL_INDICATOR)){
+            editor.clear();
+
+        } else{
+            editor.remove(selection);
+        }
+
+        editor.commit();
+
+        Log.v("removed", selection);
+
+        return 0;
+    }
+
+    @Override
+    public String getType(Uri uri) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public Uri insert(Uri uri, ContentValues values) {
+
+        SharedPreferences sharedPref = getContext().getSharedPreferences(Constants.PREFERENCE_FILE, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPref.edit();
+
+        editor.putString(values.getAsString(Constants.KEY_FIELD), values.getAsString(Constants.VALUE_FIELD));
+        editor.commit();
+
+        Log.v("insert", values.toString());
+        return uri;
+    }
+
+    @Override
+    public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs,
+                        String sortOrder) {
+
+        Log.v("query", selection);
+
+        SharedPreferences sharedPref = getContext().getSharedPreferences(Constants.PREFERENCE_FILE, Context.MODE_PRIVATE);
+
+        HashMap<String,String> hm = new HashMap<String,String>();
+
+        if(selection.equals(Constants.GLOBAL_INDICATOR)){
+
+            //TODO: get DHT data
+
+        } else if(selection.equals(Constants.LOCAL_INDICATOR)){
+
+            Map<String,?> keys = sharedPref.getAll();
+
+            for(Map.Entry<String,?> entry : keys.entrySet()){
+
+                hm.put(entry.getKey(),entry.getValue().toString());
+
+                //Log.d("map values",entry.getKey() + ": " + entry.getValue().toString());
+            }
+
+        } else {
+
+            hm.put(selection, sharedPref.getString(selection, null));
+
+
+        }
+
+        MatrixCursor cursor = new MatrixCursor(
+                new String[] {Constants.KEY_FIELD, Constants.VALUE_FIELD}
+        );
+
+        for (Map.Entry<String, String> entry : hm.entrySet()) {
+
+            cursor.newRow()
+                    .add(Constants.KEY_FIELD, entry.getKey())
+                    .add(Constants.VALUE_FIELD, entry.getValue());
+        }
+
+        return cursor;
+    }
+
+    @Override
+    public int update(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    private String genHash(String input) throws NoSuchAlgorithmException {
+        MessageDigest sha1 = MessageDigest.getInstance("SHA-1");
+        byte[] sha1Hash = sha1.digest(input.getBytes());
+        Formatter formatter = new Formatter();
+        for (byte b : sha1Hash) {
+            formatter.format("%02x", b);
+        }
+        return formatter.toString();
     }
 
 }
