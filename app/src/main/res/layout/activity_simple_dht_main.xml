@@ -28,6 +28,16 @@
         android:layout_alignParentTop="true"
         android:text="@string/button_test" />
 
+    <Button
+        android:id="@+id/button4"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentRight="true"
+        android:layout_marginTop="0dp"
+        android:layout_marginRight="77dp"
+        android:text="@string/button_clear" />
+
     <TextView
         android:id="@+id/textView1"
         android:layout_width="wrap_content"

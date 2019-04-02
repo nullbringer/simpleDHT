@@ -6,5 +6,6 @@
     <string name="button_ldump">LDump</string>
     <string name="button_gdump">GDump</string>
     <string name="button_test">Test</string>
+    <string name="button_clear">Clear</string>
 
 </resources>

@@ -8,15 +8,15 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.TextView;
 
-public class OnGDumpClickListener implements OnClickListener {
+public class OnDeleteClickListener implements OnClickListener {
 
-	private static final String TAG = OnGDumpClickListener.class.getName();
+	private static final String TAG = OnDeleteClickListener.class.getName();
 
 	private final TextView mTextView;
 	private final ContentResolver mContentResolver;
 	private final Uri mUri;
 
-	public OnGDumpClickListener(TextView _tv, ContentResolver _cr) {
+	public OnDeleteClickListener(TextView _tv, ContentResolver _cr) {
 		mTextView = _tv;
 		mContentResolver = _cr;
 		mUri = buildUri("content", "edu.buffalo.cse.cse486586.simpledht.provider");
@@ -43,31 +43,16 @@ public class OnGDumpClickListener implements OnClickListener {
 		protected Void doInBackground(Void... params) {
 
 
-			Cursor resultCursor = mContentResolver.query(mUri, null,
-					Constants.GLOBAL_INDICATOR, null, null);
 
+            mContentResolver.delete(mUri, Constants.LOCAL_INDICATOR,null);
 
-			int count = 1;
-			if (resultCursor.moveToFirst()) {
-				while (!resultCursor.isAfterLast()) {
-					String data = count++ + ". <"+ resultCursor.getString(resultCursor.getColumnIndex(Constants.KEY_FIELD)) +
-							"," + resultCursor.getString(resultCursor.getColumnIndex(Constants.VALUE_FIELD)) +
-							">\n";
-
-
-					publishProgress(data);
-
-					resultCursor.moveToNext();
-				}
-			}
-			resultCursor.close();
-
+			publishProgress("");
 			
 			return null;
 		}
 		
 		protected void onProgressUpdate(String...strings) {
-			mTextView.append(strings[0]);
+			mTextView.setText(null);
 
 			return;
 		}

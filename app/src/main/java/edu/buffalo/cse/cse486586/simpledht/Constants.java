@@ -11,9 +11,12 @@ public class Constants {
     public static final String GLOBAL_INDICATOR = "*";
     public static final String LOCAL_INDICATOR = "@";
 
-    public static final String SEPARATOR = "###";
+    public static final String SEPARATOR = "##";
+    public static final String LIST_SEPARATOR = "%%";
 
     public static final String LEADER_PORT = "11108";
+
+    public static final int SOCKET_READ_TIMEOUT = 5000;
 
     public static final String HASHED_VALUE_MAX = "ffffffffffffffffffffffffffffffffffffffff";
 
