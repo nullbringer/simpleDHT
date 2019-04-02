@@ -128,19 +128,14 @@ public class SimpleDhtProvider extends ContentProvider {
                             updateAdjacentNodes(msg);
                             break;
 
-                        case STOR:
+                        case STORE:
                             saveInRing(msg);
                             break;
 
-                        case GETALL:
+                        case GET:
                             String packets = "";
 
-                            if (!msg.getOrigin().equals(MY_PORT)) {
-
-                                packets = getGlobalData(msg);
-
-                            }
-
+                            if (!msg.getOrigin().equals(MY_PORT)) packets = getGlobalData(msg);
 
                             /* Send back the retrieved through channel to caller (Previous node) */
 
@@ -151,6 +146,12 @@ public class SimpleDhtProvider extends ContentProvider {
                             dataOutputStream.close();
 
                             break;
+
+                        case DEL:
+                            if (!msg.getOrigin().equals(MY_PORT)) deleteFromRing(msg);
+
+                            break;
+
 
                         default:
 
@@ -422,6 +423,7 @@ public class SimpleDhtProvider extends ContentProvider {
             /* if the network has only one node*/
 
             doesBelong = true;
+
         } else {
 
             /* if the network has multiple nodes */
@@ -456,7 +458,6 @@ public class SimpleDhtProvider extends ContentProvider {
 
         }
 
-
         return doesBelong;
 
 
@@ -465,25 +466,63 @@ public class SimpleDhtProvider extends ContentProvider {
     @Override
     public int delete(Uri uri, String selection, String[] selectionArgs) {
 
-        SharedPreferences sharedPref = getContext().getSharedPreferences(Constants.PREFERENCE_FILE, Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPref.edit();
+        Message message = new Message();
+        message.setMessageType(MessageType.DEL);
+        message.setKey(selection);
 
-        if (selection.equals(Constants.GLOBAL_INDICATOR)) {
+        if (selection.equals(Constants.LOCAL_INDICATOR)) {
 
-            //TODO: delete DHT data
-
-        } else if (selection.equals(Constants.LOCAL_INDICATOR)) {
-            editor.clear();
+            deleteAllLocalData();
 
         } else {
-            editor.remove(selection);
-        }
 
-        editor.apply();
+            deleteFromRing(message);
+        }
 
         Log.v("removed", selection);
 
         return 0;
+    }
+
+    private void deleteAllLocalData(){
+
+        SharedPreferences sharedPref = getContext().getSharedPreferences(Constants.PREFERENCE_FILE, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPref.edit();
+        editor.clear();
+        editor.apply();
+
+    }
+
+    private void deleteFromRing(Message message){
+
+        try {
+
+            if(message.getKey().equals(Constants.GLOBAL_INDICATOR)){
+
+                deleteAllLocalData();
+
+                /* forward the request to successor node */
+
+            }
+
+            if (doesBelongLocally(message)) {
+
+                SharedPreferences sharedPref = getContext().getSharedPreferences(Constants.PREFERENCE_FILE, Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = sharedPref.edit();
+                editor.remove(message.getKey());
+                editor.apply();
+
+            }  else{
+
+                new ClientTask().executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, message.createPacket(), NEXT_NODE);
+            }
+
+        } catch (NoSuchAlgorithmException e) {
+
+            Log.e(TAG, "Could not hash!!");
+
+        }
+
     }
 
     @Override
@@ -500,7 +539,7 @@ public class SimpleDhtProvider extends ContentProvider {
 
 
         Message message = new Message();
-        message.setMessageType(MessageType.STOR);
+        message.setMessageType(MessageType.STORE);
         message.setOrigin(MY_PORT);
         message.setKey(thisKey);
         message.setValue(thisValue);
@@ -521,7 +560,7 @@ public class SimpleDhtProvider extends ContentProvider {
 
         Message message = new Message();
         message.setOrigin(String.valueOf(MY_PORT));
-        message.setMessageType(MessageType.GETALL);
+        message.setMessageType(MessageType.GET);
         message.setKey(selection);
 
         if (selection.equals(Constants.LOCAL_INDICATOR)) {
@@ -560,6 +599,7 @@ public class SimpleDhtProvider extends ContentProvider {
 
             result = new ClientTaskToGetData().executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, message.createPacket(), NEXT_NODE).get();
 
+            //TODO: check async task return after getting local data for a key
 
             if (message.getKey().equals(Constants.GLOBAL_INDICATOR)) {
                 /* if the event is part of global query, get all local data */
@@ -631,7 +671,7 @@ public class SimpleDhtProvider extends ContentProvider {
             msg.setKey(pair.getKey());
             msg.setValue(pair.getValue());
             msg.setOrigin(MY_PORT);
-            msg.setMessageType(MessageType.GETALL);
+            msg.setMessageType(MessageType.GET);
 
             packetList.add(msg.createPacket());
 

@@ -4,8 +4,7 @@ public enum MessageType {
 
     JOIN,
     JOIN_ACK,
-    STOR,
-    GETALL,
+    STORE,
     GET,
     DEL;
 }
