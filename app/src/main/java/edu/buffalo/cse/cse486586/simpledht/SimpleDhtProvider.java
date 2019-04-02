@@ -43,7 +43,7 @@ public class SimpleDhtProvider extends ContentProvider {
     private static String PREV_NODE;
     private static String NEXT_NODE;
 
-    private static TreeMap<String, String> ringStructure = new TreeMap<String,String>();
+    private static TreeMap<String, String> ringStructure = new TreeMap<String, String>();
 
     @Override
     public boolean onCreate() {
@@ -56,13 +56,13 @@ public class SimpleDhtProvider extends ContentProvider {
 
         try {
 
-            if(MY_PORT.equals(Constants.LEADER_PORT)){
+            if (MY_PORT.equals(Constants.LEADER_PORT)) {
                 isLeader = true;
-                String emulatorId = String.valueOf(Integer.parseInt(MY_PORT)/2);
-                ringStructure.put(genHash(emulatorId),MY_PORT);
+                String emulatorId = String.valueOf(Integer.parseInt(MY_PORT) / 2);
+                ringStructure.put(genHash(emulatorId), MY_PORT);
             }
 
-            Log.e(TAG,"my Port:::" + MY_PORT);
+            Log.e(TAG, "my Port:::" + MY_PORT);
 
 
             /* Create server */
@@ -74,14 +74,14 @@ public class SimpleDhtProvider extends ContentProvider {
 
             Log.e(TAG, "Can't create a ServerSocket");
             return false;
-        } catch (NoSuchAlgorithmException e){
+        } catch (NoSuchAlgorithmException e) {
             Log.e(TAG, "Could not hash!");
             return false;
         }
 
 
         /* Join the Network */
-        if(!isLeader) {
+        if (!isLeader) {
 
             Message message = new Message();
             message.setOrigin(String.valueOf(MY_PORT));
@@ -92,7 +92,6 @@ public class SimpleDhtProvider extends ContentProvider {
 
         return true;
     }
-
 
 
     private class ServerTask extends AsyncTask<ServerSocket, Message, Void> {
@@ -114,13 +113,12 @@ public class SimpleDhtProvider extends ContentProvider {
                     String incomingMessege = dataInputStream.readUTF();
 
 
-
                     Message msg = new Message(incomingMessege);
 
 
                     Log.d(TAG, msg.toString());
 
-                    switch (msg.getMessageType()){
+                    switch (msg.getMessageType()) {
 
                         case JOIN:
                             addNodeToNetwork(msg);
@@ -137,7 +135,7 @@ public class SimpleDhtProvider extends ContentProvider {
                         case GETALL:
                             String packets = "";
 
-                            if(!msg.getOrigin().equals(MY_PORT)){
+                            if (!msg.getOrigin().equals(MY_PORT)) {
 
                                 packets = getGlobalData(msg);
 
@@ -161,14 +159,12 @@ public class SimpleDhtProvider extends ContentProvider {
                     }
 
 
-
-
                     clientSocket.close();
 
 
                 } catch (IOException e) {
                     Log.e(TAG, "Client Connection failed");
-                } catch (NoSuchAlgorithmException e){
+                } catch (NoSuchAlgorithmException e) {
                     Log.e(TAG, "Could not hash!!");
                 }
             }
@@ -176,7 +172,7 @@ public class SimpleDhtProvider extends ContentProvider {
 
         }
 
-        protected void onProgressUpdate(Message...msgs) {
+        protected void onProgressUpdate(Message... msgs) {
 
 
             try {
@@ -184,14 +180,12 @@ public class SimpleDhtProvider extends ContentProvider {
                 //do stuff
 
             } catch (Exception e) {
-                Log.d(TAG,"CloneNotSupportedException in queueing!!");
+                Log.d(TAG, "CloneNotSupportedException in queueing!!");
             }
-
 
 
         }
     }
-
 
 
     private class ClientTask extends AsyncTask<String, Void, Void> {
@@ -214,7 +208,7 @@ public class SimpleDhtProvider extends ContentProvider {
                 socket.close();
 
 
-            } catch (SocketTimeoutException e){
+            } catch (SocketTimeoutException e) {
                 Log.e(TAG, "ClientTask SocketTimeoutException");
 
             } catch (UnknownHostException e) {
@@ -254,7 +248,7 @@ public class SimpleDhtProvider extends ContentProvider {
                 socket.close();
 
 
-            } catch (SocketTimeoutException e){
+            } catch (SocketTimeoutException e) {
                 Log.e(TAG, "ClientTask SocketTimeoutException");
 
             } catch (UnknownHostException e) {
@@ -290,7 +284,7 @@ public class SimpleDhtProvider extends ContentProvider {
 
     }
 
-    private String readAckAndClose(Socket socket) throws IOException{
+    private String readAckAndClose(Socket socket) throws IOException {
 
         DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
 
@@ -306,10 +300,10 @@ public class SimpleDhtProvider extends ContentProvider {
 
     }
 
-    private void addNodeToNetwork(Message msg) throws NoSuchAlgorithmException{
+    private void addNodeToNetwork(Message msg) throws NoSuchAlgorithmException {
 
 
-        ringStructure.put(genHash(String.valueOf(Integer.parseInt(msg.getOrigin())/2)),msg.getOrigin());
+        ringStructure.put(genHash(String.valueOf(Integer.parseInt(msg.getOrigin()) / 2)), msg.getOrigin());
 
         /* update New Node */
         Message returnMsg = new Message();
@@ -342,8 +336,7 @@ public class SimpleDhtProvider extends ContentProvider {
 
     }
 
-    private Message findAdjacentNode(Message msg, String targetPort){
-
+    private Message findAdjacentNode(Message msg, String targetPort) {
 
 
         msg.setPrevNode(ringStructure.lastEntry().getValue());
@@ -352,14 +345,14 @@ public class SimpleDhtProvider extends ContentProvider {
         Set<String> keys = ringStructure.keySet();
         Iterator<String> keyIterator = keys.iterator();
 
-        while(keyIterator.hasNext()){
+        while (keyIterator.hasNext()) {
 
             String key = keyIterator.next();
             String thisPort = ringStructure.get(key);
 
-            if(thisPort.equals(targetPort)){
+            if (thisPort.equals(targetPort)) {
 
-                if(keyIterator.hasNext())
+                if (keyIterator.hasNext())
                     msg.setNextNode(ringStructure.get(keyIterator.next()));
                 else
                     msg.setNextNode(ringStructure.firstEntry().getValue());
@@ -373,26 +366,25 @@ public class SimpleDhtProvider extends ContentProvider {
             }
 
 
-
         }
 
         return msg;
 
     }
 
-    private void updateAdjacentNodes(Message msg){
+    private void updateAdjacentNodes(Message msg) {
 
         PREV_NODE = msg.getPrevNode();
         NEXT_NODE = msg.getNextNode();
 
     }
 
-    private void saveInRing(Message message){
+    private void saveInRing(Message message) {
 
 
         try {
 
-            if(doesBelongLocally(message)){
+            if (doesBelongLocally(message)) {
 
                 SharedPreferences sharedPref = getContext().getSharedPreferences(Constants.PREFERENCE_FILE, Context.MODE_PRIVATE);
                 SharedPreferences.Editor editor = sharedPref.edit();
@@ -401,7 +393,7 @@ public class SimpleDhtProvider extends ContentProvider {
                 editor.apply();
 
 
-            }else{
+            } else {
 
                 /* forward the request to successor node */
 
@@ -418,34 +410,33 @@ public class SimpleDhtProvider extends ContentProvider {
 
     }
 
-    private boolean doesBelongLocally(Message message) throws NoSuchAlgorithmException{
+    private boolean doesBelongLocally(Message message) throws NoSuchAlgorithmException {
 
         boolean doesBelong = false;
 
         String hashedKey = genHash(message.getKey());
-        String myNodeHash = genHash(String.valueOf(Integer.parseInt(MY_PORT)/2));
-        String prevNodeHash = genHash(String.valueOf(Integer.parseInt(PREV_NODE)/2));
-        if(myNodeHash.compareTo(prevNodeHash)==0){
+        String myNodeHash = genHash(String.valueOf(Integer.parseInt(MY_PORT) / 2));
+        String prevNodeHash = genHash(String.valueOf(Integer.parseInt(PREV_NODE) / 2));
+        if (myNodeHash.compareTo(prevNodeHash) == 0) {
 
             /* if the network has only one node*/
 
             doesBelong = true;
-        }
-        else{
+        } else {
 
             /* if the network has multiple nodes */
 
-            if(myNodeHash.compareTo(prevNodeHash)<0){
+            if (myNodeHash.compareTo(prevNodeHash) < 0) {
 
                 /* if the key belongs between last node and first node*/
 
-                if(hashedKey.compareTo(myNodeHash)<0 && hashedKey.compareTo(Constants.HASHED_VALUE_MIN)>0){
+                if (hashedKey.compareTo(myNodeHash) < 0 && hashedKey.compareTo(Constants.HASHED_VALUE_MIN) > 0) {
 
                     /* if the key belongs between first node and minimum key*/
 
                     prevNodeHash = Constants.HASHED_VALUE_MIN;
 
-                } else if(hashedKey.compareTo(prevNodeHash)>0 && hashedKey.compareTo(Constants.HASHED_VALUE_MAX)<0){
+                } else if (hashedKey.compareTo(prevNodeHash) > 0 && hashedKey.compareTo(Constants.HASHED_VALUE_MAX) < 0) {
 
                     /* if the key belongs between last node and maximum key*/
 
@@ -457,7 +448,7 @@ public class SimpleDhtProvider extends ContentProvider {
 
             /* If target belongs between two successive nodes, write locally */
 
-            if(hashedKey.compareTo(myNodeHash)<0 && hashedKey.compareTo(prevNodeHash)>=0){
+            if (hashedKey.compareTo(myNodeHash) < 0 && hashedKey.compareTo(prevNodeHash) >= 0) {
 
                 doesBelong = true;
 
@@ -477,14 +468,14 @@ public class SimpleDhtProvider extends ContentProvider {
         SharedPreferences sharedPref = getContext().getSharedPreferences(Constants.PREFERENCE_FILE, Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPref.edit();
 
-        if(selection.equals(Constants.GLOBAL_INDICATOR)){
+        if (selection.equals(Constants.GLOBAL_INDICATOR)) {
 
             //TODO: delete DHT data
 
-        } else if(selection.equals(Constants.LOCAL_INDICATOR)){
+        } else if (selection.equals(Constants.LOCAL_INDICATOR)) {
             editor.clear();
 
-        } else{
+        } else {
             editor.remove(selection);
         }
 
@@ -526,14 +517,14 @@ public class SimpleDhtProvider extends ContentProvider {
 
         Log.v("query", selection);
 
-        HashMap<String,String> hm;
+        HashMap<String, String> hm;
 
         Message message = new Message();
         message.setOrigin(String.valueOf(MY_PORT));
         message.setMessageType(MessageType.GETALL);
         message.setKey(selection);
 
-        if(selection.equals(Constants.LOCAL_INDICATOR)){
+        if (selection.equals(Constants.LOCAL_INDICATOR)) {
 
             hm = getAllLocalData();
 
@@ -546,7 +537,7 @@ public class SimpleDhtProvider extends ContentProvider {
         }
 
         MatrixCursor cursor = new MatrixCursor(
-                new String[] {Constants.KEY_FIELD, Constants.VALUE_FIELD}
+                new String[]{Constants.KEY_FIELD, Constants.VALUE_FIELD}
         );
 
         for (Map.Entry<String, String> entry : hm.entrySet()) {
@@ -558,23 +549,23 @@ public class SimpleDhtProvider extends ContentProvider {
 
         return cursor;
     }
-    private String getGlobalData(Message message){
 
-        HashMap<String,String> hm = new HashMap<String,String>();
+    private String getGlobalData(Message message) {
+
+        HashMap<String, String> hm = new HashMap<String, String>();
         String result = "";
 
         try {
 
 
-
             result = new ClientTaskToGetData().executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, message.createPacket(), NEXT_NODE).get();
 
 
-            if(message.getKey().equals(Constants.GLOBAL_INDICATOR)) {
+            if (message.getKey().equals(Constants.GLOBAL_INDICATOR)) {
                 /* if the event is part of global query, get all local data */
 
                 hm = getAllLocalData();
-            } else if(doesBelongLocally(message)){
+            } else if (doesBelongLocally(message)) {
 
                 hm = getLocalDataByKey(message.getKey());
             }
@@ -585,7 +576,7 @@ public class SimpleDhtProvider extends ContentProvider {
             Log.e(TAG, "InterruptedException");
         } catch (ExecutionException e) {
             Log.e(TAG, "ExecutionException!!");
-        } catch (NoSuchAlgorithmException e){
+        } catch (NoSuchAlgorithmException e) {
             Log.e(TAG, "Could not hash!");
         }
 
@@ -593,17 +584,17 @@ public class SimpleDhtProvider extends ContentProvider {
         return result;
     }
 
-    private HashMap<String, String> getAllLocalData(){
+    private HashMap<String, String> getAllLocalData() {
 
-        HashMap<String,String> hm = new HashMap<String,String>();
+        HashMap<String, String> hm = new HashMap<String, String>();
 
         SharedPreferences sharedPref = getContext().getSharedPreferences(Constants.PREFERENCE_FILE, Context.MODE_PRIVATE);
 
-        Map<String,?> keys = sharedPref.getAll();
+        Map<String, ?> keys = sharedPref.getAll();
 
-        for(Map.Entry<String,?> entry : keys.entrySet()){
+        for (Map.Entry<String, ?> entry : keys.entrySet()) {
 
-            hm.put(entry.getKey(),entry.getValue().toString());
+            hm.put(entry.getKey(), entry.getValue().toString());
 
         }
 
@@ -611,9 +602,9 @@ public class SimpleDhtProvider extends ContentProvider {
 
     }
 
-    private HashMap<String, String> getLocalDataByKey(String selection){
+    private HashMap<String, String> getLocalDataByKey(String selection) {
 
-        HashMap<String,String> hm = new HashMap<String,String>();
+        HashMap<String, String> hm = new HashMap<String, String>();
 
 
         SharedPreferences sharedPref = getContext().getSharedPreferences(Constants.PREFERENCE_FILE, Context.MODE_PRIVATE);
@@ -625,8 +616,7 @@ public class SimpleDhtProvider extends ContentProvider {
     }
 
 
-
-    private String convertMessageListToPacket(HashMap<String, String> hm){
+    private String convertMessageListToPacket(HashMap<String, String> hm) {
 
 
         List<String> packetList = new ArrayList<String>();
@@ -635,7 +625,7 @@ public class SimpleDhtProvider extends ContentProvider {
         Iterator it = hm.entrySet().iterator();
 
         while (it.hasNext()) {
-            Map.Entry<String, String>  pair = (Map.Entry)it.next();
+            Map.Entry<String, String> pair = (Map.Entry) it.next();
 
             Message msg = new Message();
             msg.setKey(pair.getKey());
@@ -653,14 +643,14 @@ public class SimpleDhtProvider extends ContentProvider {
 
     }
 
-    private HashMap<String, String> convertPacketsToKeyPair(String packets){
+    private HashMap<String, String> convertPacketsToKeyPair(String packets) {
 
-        HashMap<String,String> hm = new HashMap<String, String>();
+        HashMap<String, String> hm = new HashMap<String, String>();
 
         List<String> ls = Arrays.asList(packets.split(Constants.LIST_SEPARATOR));
 
-        for(String packet: ls){
-            if(packet != null && packet.trim().length()>0){
+        for (String packet : ls) {
+            if (packet != null && packet.trim().length() > 0) {
                 Message msg = new Message(packet);
 
                 hm.put(msg.getKey(), msg.getValue());
