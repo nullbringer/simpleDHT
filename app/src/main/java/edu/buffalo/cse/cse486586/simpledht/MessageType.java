@@ -6,5 +6,5 @@ public enum MessageType {
     JOIN_ACK,
     STORE,
     GET,
-    DEL;
+    DEL
 }
