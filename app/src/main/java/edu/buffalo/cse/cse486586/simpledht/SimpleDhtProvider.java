@@ -71,7 +71,6 @@ public class SimpleDhtProvider extends ContentProvider {
             new ServerTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, serverSocket);
 
         } catch (IOException e) {
-
             Log.e(TAG, "Can't create a ServerSocket");
             return false;
         } catch (NoSuchAlgorithmException e) {
@@ -105,7 +104,6 @@ public class SimpleDhtProvider extends ContentProvider {
             while (true) {
 
                 try {
-
 
                     Socket clientSocket = serverSocket.accept();
 
@@ -152,16 +150,13 @@ public class SimpleDhtProvider extends ContentProvider {
 
                             break;
 
-
                         default:
 
-                            publishProgress(msg);
+                            Log.e(TAG,"default switch case executed!!");
 
                     }
 
-
                     clientSocket.close();
-
 
                 } catch (IOException e) {
                     Log.e(TAG, "Client Connection failed");
@@ -170,22 +165,8 @@ public class SimpleDhtProvider extends ContentProvider {
                 }
             }
 
-
         }
 
-        protected void onProgressUpdate(Message... msgs) {
-
-
-            try {
-
-                //do stuff
-
-            } catch (Exception e) {
-                Log.d(TAG, "CloneNotSupportedException in queueing!!");
-            }
-
-
-        }
     }
 
 
@@ -193,7 +174,6 @@ public class SimpleDhtProvider extends ContentProvider {
 
         @Override
         protected Void doInBackground(String... msgs) {
-
 
             String msg = msgs[0];
             int thisPort = Integer.parseInt(msgs[1]);
@@ -208,7 +188,6 @@ public class SimpleDhtProvider extends ContentProvider {
 
                 socket.close();
 
-
             } catch (SocketTimeoutException e) {
                 Log.e(TAG, "ClientTask SocketTimeoutException");
 
@@ -220,7 +199,6 @@ public class SimpleDhtProvider extends ContentProvider {
 
             }
 
-
             return null;
         }
     }
@@ -230,7 +208,6 @@ public class SimpleDhtProvider extends ContentProvider {
 
         @Override
         protected String doInBackground(String... msgs) {
-
 
             String msg = msgs[0];
             int thisPort = Integer.parseInt(msgs[1]);
@@ -248,7 +225,6 @@ public class SimpleDhtProvider extends ContentProvider {
 
                 socket.close();
 
-
             } catch (SocketTimeoutException e) {
                 Log.e(TAG, "ClientTask SocketTimeoutException");
 
@@ -259,7 +235,6 @@ public class SimpleDhtProvider extends ContentProvider {
                 Log.e(TAG, "ClientTask socket IOException: ");
 
             }
-
 
             return result;
         }
@@ -382,7 +357,6 @@ public class SimpleDhtProvider extends ContentProvider {
 
     private void saveInRing(Message message) {
 
-
         try {
 
             if (doesBelongLocally(message)) {
@@ -392,7 +366,6 @@ public class SimpleDhtProvider extends ContentProvider {
 
                 editor.putString(message.getKey(), message.getValue());
                 editor.apply();
-
 
             } else {
 
@@ -443,9 +416,7 @@ public class SimpleDhtProvider extends ContentProvider {
                     /* if the key belongs between last node and maximum key*/
 
                     myNodeHash = Constants.HASHED_VALUE_MAX;
-
                 }
-
             }
 
             /* If target belongs between two successive nodes, write locally */
@@ -459,8 +430,6 @@ public class SimpleDhtProvider extends ContentProvider {
         }
 
         return doesBelong;
-
-
     }
 
     @Override
@@ -490,7 +459,6 @@ public class SimpleDhtProvider extends ContentProvider {
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.clear();
         editor.apply();
-
     }
 
     private void deleteFromRing(Message message){
@@ -502,20 +470,23 @@ public class SimpleDhtProvider extends ContentProvider {
                 deleteAllLocalData();
 
                 /* forward the request to successor node */
+                new ClientTask().executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, message.createPacket(), NEXT_NODE);
 
-            }
-
-            if (doesBelongLocally(message)) {
+            } else if (doesBelongLocally(message)) {
 
                 SharedPreferences sharedPref = getContext().getSharedPreferences(Constants.PREFERENCE_FILE, Context.MODE_PRIVATE);
                 SharedPreferences.Editor editor = sharedPref.edit();
                 editor.remove(message.getKey());
                 editor.apply();
 
-            }  else{
+            } else {
 
+                /* forward the request to successor node */
                 new ClientTask().executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, message.createPacket(), NEXT_NODE);
             }
+
+
+
 
         } catch (NoSuchAlgorithmException e) {
 

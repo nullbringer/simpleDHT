@@ -10,10 +10,12 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.TextView;
 
+import java.util.Random;
+
 public class OnTestClickListener implements OnClickListener {
 
 	private static final String TAG = OnTestClickListener.class.getName();
-	private static final int TEST_CNT = 50;
+	private static final int TEST_CNT = 25;
 
 	private final TextView mTextView;
 	private final ContentResolver mContentResolver;
@@ -36,9 +38,10 @@ public class OnTestClickListener implements OnClickListener {
 
 	private ContentValues[] initTestValues() {
 		ContentValues[] cv = new ContentValues[TEST_CNT];
+		Random rand = new Random();
 		for (int i = 0; i < TEST_CNT; i++) {
 			cv[i] = new ContentValues();
-			cv[i].put(Constants.KEY_FIELD, "key" + Integer.toString(i));
+			cv[i].put(Constants.KEY_FIELD, "key" + Integer.toString(rand.nextInt(9999)));
 			cv[i].put(Constants.VALUE_FIELD, "val" + Integer.toString(i));
 		}
 
