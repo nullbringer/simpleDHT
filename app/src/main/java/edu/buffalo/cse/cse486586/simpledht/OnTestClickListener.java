@@ -41,7 +41,7 @@ public class OnTestClickListener implements OnClickListener {
 		Random rand = new Random();
 		for (int i = 0; i < TEST_CNT; i++) {
 			cv[i] = new ContentValues();
-			cv[i].put(Constants.KEY_FIELD, "key" + Integer.toString(rand.nextInt(9999)));
+			cv[i].put(Constants.KEY_FIELD, "key" + Integer.toString(i));
 			cv[i].put(Constants.VALUE_FIELD, "val" + Integer.toString(i));
 		}
 

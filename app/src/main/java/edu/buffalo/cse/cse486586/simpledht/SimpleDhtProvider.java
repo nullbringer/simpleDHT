@@ -421,7 +421,7 @@ public class SimpleDhtProvider extends ContentProvider {
 
             /* If target belongs between two successive nodes, write locally */
 
-            if (hashedKey.compareTo(myNodeHash) < 0 && hashedKey.compareTo(prevNodeHash) >= 0) {
+            if (hashedKey.compareTo(myNodeHash) <= 0 && hashedKey.compareTo(prevNodeHash) > 0) {
 
                 doesBelong = true;
 
